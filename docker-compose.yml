@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3006:3006"  # Vite frontend
+      - "3001:3001"  # Express backend
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_HOST=host.docker.internal
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT:-5432}
+      - VITE_API_URL=http://localhost:3001
+      - HOST=0.0.0.0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
