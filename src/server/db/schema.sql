@@ -49,3 +49,38 @@ CREATE TRIGGER update_panel_events_updated_at
     BEFORE UPDATE ON panel_events
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to get historical attendance data
+CREATE OR REPLACE FUNCTION get_historical_attendance(p_week_number INTEGER, p_type VARCHAR)
+RETURNS TABLE (
+    events BIGINT,
+    total_candidates BIGINT,
+    avg_per_event NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH event_stats AS (
+        SELECT 
+            p.panel_type,
+            EXTRACT(WEEK FROM p.panel_date) as week_number,
+            COUNT(DISTINCT p.panel_date) as number_of_events,
+            COUNT(CASE WHEN pa.attendee_type = 'C' THEN pa.id END) as total_candidates,
+            ROUND(COUNT(CASE WHEN pa.attendee_type = 'C' THEN pa.id END)::decimal / 
+                  NULLIF(COUNT(DISTINCT p.panel_date), 0), 1) as avg_candidates_per_event
+        FROM panels p
+        LEFT JOIN panel_attendees pa ON p.id = pa.panel_id
+        WHERE 
+            p.panel_type = p_type
+            AND EXTRACT(WEEK FROM p.panel_date) = p_week_number
+            AND p.panel_date >= CURRENT_DATE - INTERVAL '1 year'
+        GROUP BY 
+            p.panel_type,
+            EXTRACT(WEEK FROM p.panel_date)
+    )
+    SELECT 
+        COALESCE(SUM(number_of_events), 0) as events,
+        COALESCE(SUM(total_candidates), 0) as total_candidates,
+        COALESCE(ROUND(AVG(avg_candidates_per_event), 1), 0) as avg_per_event
+    FROM event_stats;
+END;
+$$ LANGUAGE plpgsql;

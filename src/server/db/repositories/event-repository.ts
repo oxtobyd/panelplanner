@@ -28,7 +28,8 @@ export async function getAllEvents(): Promise<InterviewEvent[]> {
         e.report_deadline as "reportDeadline",
         e.notes,
         e.status,
-        e.impacted_secretary_ids as "impactedSecretaryIds"
+        e.impacted_secretary_ids as "impactedSecretaryIds",
+        (SELECT avg_per_event FROM get_historical_attendance(EXTRACT(WEEK FROM e.date)::integer, e.type)) as "historicalAverage"
       FROM panel_events e
       JOIN panel_venues v ON e.venue_id = v.id
       LEFT JOIN panel_secretaries s ON e.secretary_id = s.id
@@ -169,4 +170,17 @@ export async function updateEvent(event: InterviewEvent): Promise<InterviewEvent
 
 export async function deleteEvent(id: string): Promise<void> {
   await query('DELETE FROM panel_events WHERE id = $1', [id]);
+}
+
+export async function getHistoricalAttendance(panelType: string, weekNumber: number) {
+  try {
+    const result = await query(
+      'SELECT * FROM get_historical_attendance($1, $2)',
+      [weekNumber, panelType]
+    );
+    return result.rows[0];
+  } catch (error) {
+    console.error('Database error in getHistoricalAttendance:', error);
+    throw new Error('Failed to fetch historical attendance data');
+  }
 }

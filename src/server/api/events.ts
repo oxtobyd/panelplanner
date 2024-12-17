@@ -1,5 +1,5 @@
 import express from 'express';
-import { createEvent, getAllEvents, updateEvent, deleteEvent } from '../db/repositories/event-repository';
+import { createEvent, getAllEvents, updateEvent, deleteEvent, getHistoricalAttendance } from '../db/repositories/event-repository';
 
 const router = express.Router();
 
@@ -10,6 +10,23 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+router.get('/historical-attendance', async (req, res) => {
+  try {
+    const weekNumber = parseInt(req.query.weekNumber as string);
+    const panelType = req.query.panelType as string;
+
+    if (isNaN(weekNumber) || !panelType) {
+      return res.status(400).json({ error: 'Invalid parameters. weekNumber and panelType are required.' });
+    }
+
+    const data = await getHistoricalAttendance(panelType, weekNumber);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching historical attendance:', error);
+    res.status(500).json({ error: 'Failed to fetch historical attendance data' });
   }
 });
 

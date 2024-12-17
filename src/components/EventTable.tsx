@@ -224,15 +224,14 @@ const EventTable: React.FC<EventTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
+
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Panel/Event No.
               </th>
               <SortHeader field="venue">Venue</SortHeader>
               <SortHeader field="secretary">Secretary</SortHeader>
               <th className="px-4 py-2 text-left">Attendance</th>
+              <th className="px-4 py-2 text-left">Historical Avg</th>
               <th className="px-4 py-2 text-left">Report Due</th>
               <th className="px-4 py-2 text-left">Paperwork Due</th>
               <th className="px-4 py-2 text-left">Status</th>
@@ -261,9 +260,7 @@ const EventTable: React.FC<EventTableProps> = ({
                       {event.season}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {event.type}
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -286,10 +283,17 @@ const EventTable: React.FC<EventTableProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {event.secretary?.name || 'Unassigned'}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2 text-sm">
                     {!['TeamResidential', 'Training', 'Conference'].includes(event.type) 
-                      ? `${event.actualAttendance}/${event.estimatedAttendance}`
+                      ? event.actualAttendance || '-'
                       : '-'}
+                  </td>
+                  <td className="px-4 py-2 text-sm">
+                    {['Panel', 'Carousel'].includes(event.type) && event.historicalAverage ? (
+                      <span className="text-gray-600">{event.historicalAverage}</span>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {(event.type === 'Panel' || event.type === 'Carousel') ? (

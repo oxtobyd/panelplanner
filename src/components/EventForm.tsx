@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { InterviewEvent, Secretary, Venue } from '../types';
+import { api, HistoricalAttendanceData } from '../api/client';
+import HistoricalAttendanceTable from './HistoricalAttendanceTable';
 
 interface EventFormProps {
   event: InterviewEvent | null;
@@ -33,6 +35,9 @@ const EventForm: React.FC<EventFormProps> = ({
     })
   });
 
+  const [historicalData, setHistoricalData] = useState<HistoricalAttendanceData | null>(null);
+  const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
+
   const isSpecialEvent = ['TeamResidential', 'Training', 'Conference'].includes(formData.type as string);
 
   useEffect(() => {
@@ -54,6 +59,30 @@ const EventForm: React.FC<EventFormProps> = ({
       });
     }
   }, [event, venues, secretaries]);
+
+  const fetchHistoricalData = async (weekNumber: number, type: string) => {
+    if (!['Panel', 'Carousel'].includes(type)) {
+      setHistoricalData(null);
+      return;
+    }
+    
+    setIsLoadingHistorical(true);
+    try {
+      const data = await api.getHistoricalAttendance(weekNumber, type);
+      setHistoricalData(data);
+    } catch (error) {
+      console.error('Failed to fetch historical data:', error);
+      setHistoricalData(null);
+    } finally {
+      setIsLoadingHistorical(false);
+    }
+  };
+
+  useEffect(() => {
+    if (formData.weekNumber && formData.type) {
+      fetchHistoricalData(formData.weekNumber, formData.type as string);
+    }
+  }, [formData.weekNumber, formData.type]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,16 +109,16 @@ const EventForm: React.FC<EventFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 my-8">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">
               {event ? 'Edit Event' : 'New Event'}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-500"
+              className="text-gray-400 hover:text-gray-500 transition-colors"
             >
               <span className="sr-only">Close</span>
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,50 +126,66 @@ const EventForm: React.FC<EventFormProps> = ({
               </svg>
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as InterviewType })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              >
-                <option value="Panel">Panel</option>
-                <option value="Carousel">Carousel</option>
-                <option value="TeamResidential">Team Residential</option>
-                <option value="Training">Training</option>
-                <option value="Conference">Conference</option>
-                <option value="CandidatesPanel">Candidates Panel</option>
-              </select>
-            </div>
-
-            {!isSpecialEvent && (
+        </div>
+        
+        <div className="px-6 py-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Secretary</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <select
-                  value={formData.secretary?.id}
-                  onChange={(e) => {
-                    const secretary = secretaries.find(s => s.id === e.target.value);
-                    setFormData({ ...formData, secretary });
-                  }}
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as InterviewType })}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  required
                 >
-                  {secretaries.map((secretary) => (
-                    <option key={secretary.id} value={secretary.id}>
-                      {secretary.name}
-                    </option>
-                  ))}
+                  <option value="Panel">Panel</option>
+                  <option value="Carousel">Carousel</option>
+                  <option value="TeamResidential">Team Residential</option>
+                  <option value="Training">Training</option>
+                  <option value="Conference">Conference</option>
+                  <option value="CandidatesPanel">Candidates Panel</option>
                 </select>
               </div>
-            )}
+
+              {!isSpecialEvent && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Secretary</label>
+                    <select
+                      value={formData.secretary?.id}
+                      onChange={(e) => {
+                        const secretary = secretaries.find(s => s.id === e.target.value);
+                        setFormData({ ...formData, secretary });
+                      }}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      required
+                    >
+                      {secretaries.map((secretary) => (
+                        <option key={secretary.id} value={secretary.id}>
+                          {secretary.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Panel Number</label>
+                    <input
+                      type="text"
+                      value={formData.panelNumber}
+                      onChange={(e) => setFormData({ ...formData, panelNumber: e.target.value })}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
 
             {isSpecialEvent && (
-              <div className="border border-gray-200 rounded-md p-3">
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Impacted Secretaries</label>
-                <div className="max-h-48 overflow-y-auto space-y-2">
+                <div className="max-h-48 overflow-y-auto space-y-2 grid grid-cols-3">
                   {secretaries.map((secretary) => (
-                    <label key={secretary.id} className="flex items-center">
+                    <label key={secretary.id} className="flex items-center p-2 hover:bg-white rounded-md transition-colors">
                       <input
                         type="checkbox"
                         checked={formData.impactedSecretaryIds?.includes(Number(secretary.id))}
@@ -161,17 +206,7 @@ const EventForm: React.FC<EventFormProps> = ({
             )}
 
             {!isSpecialEvent && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Panel Number</label>
-                  <input
-                    type="text"
-                    value={formData.panelNumber}
-                    onChange={(e) => setFormData({ ...formData, panelNumber: e.target.value })}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
-
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Week Number</label>
                   <input
@@ -181,27 +216,28 @@ const EventForm: React.FC<EventFormProps> = ({
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estimated Attendance
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Attendance</label>
                   <input
                     type="number"
                     value={formData.estimatedAttendance}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        estimatedAttendance: parseInt(e.target.value),
-                      })
-                    }
+                    onChange={(e) => setFormData({ ...formData, estimatedAttendance: parseInt(e.target.value) })}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
-              </>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Actual Attendance</label>
+                  <input
+                    type="number"
+                    value={formData.actualAttendance}
+                    onChange={(e) => setFormData({ ...formData, actualAttendance: parseInt(e.target.value) })}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                 <input
@@ -212,17 +248,28 @@ const EventForm: React.FC<EventFormProps> = ({
                   required
                 />
               </div>
-              {formData.type === 'Carousel' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    value={formData.time || ''}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input
+                  type="time"
+                  value={formData.time || '10:00'}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' })}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value="Available">Available</option>
+                  <option value="Booked">Booked</option>
+                  <option value="Confirmed">Confirmed</option>
+                </select>
+              </div>
             </div>
 
             <div>
@@ -245,85 +292,74 @@ const EventForm: React.FC<EventFormProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                required
-              >
-                <option value="Available">Available</option>
-                <option value="Booked">Booked</option>
-                <option value="Confirmed">Confirmed</option>
-              </select>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 rows={3}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
 
-            <div className="flex justify-end space-x-3 mt-6">
-              {event && (
-                <>
-                  {onDelete && (
+            <HistoricalAttendanceTable 
+              data={historicalData} 
+              isLoading={isLoadingHistorical} 
+              weekNumber={formData.weekNumber}
+            />
+
+            <div className="flex justify-between pt-4 border-t border-gray-200">
+              <div className="flex space-x-3">
+                {event && (
+                  <>
+                    {onDelete && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(event.id)}
+                        className="inline-flex justify-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      >
+                        Delete
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this event?')) {
-                          onDelete(event.id);
-                          onClose();
-                        }
+                        const duplicatedEvent = {
+                          type: event.type,
+                          panelNumber: event.panelNumber,
+                          date: event.date,
+                          weekNumber: event.weekNumber,
+                          venue: event.venue,
+                          secretary: event.secretary,
+                          estimatedAttendance: event.estimatedAttendance,
+                          actualAttendance: event.actualAttendance,
+                          notes: event.notes,
+                          status: event.status,
+                          impactedSecretaryIds: event.impactedSecretaryIds
+                        };
+                        onSubmit(duplicatedEvent);
                       }}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="inline-flex justify-center rounded-md border border-green-300 bg-white px-4 py-2 text-sm font-medium text-green-700 shadow-sm hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                     >
-                      Delete
+                      Duplicate
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Create a new event with the same details but as a new record
-                      const duplicatedEvent = {
-                        type: event.type,
-                        panelNumber: event.panelNumber,
-                        date: event.date, // Keep original date
-                        weekNumber: event.weekNumber,
-                        venue: event.venue,
-                        secretary: event.secretary,
-                        estimatedAttendance: event.estimatedAttendance,
-                        actualAttendance: event.actualAttendance,
-                        notes: event.notes,
-                        status: event.status,
-                        impactedSecretaryIds: event.impactedSecretaryIds
-                      };
-                      // Submit as new event without closing the form
-                      onSubmit(duplicatedEvent);
-                    }}
-                    className="inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                  >
-                    Duplicate
-                  </button>
-                </>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                {event ? 'Update' : 'Create'}
-              </button>
+                  </>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  {event ? 'Update' : 'Create'}
+                </button>
+              </div>
             </div>
           </form>
         </div>

@@ -1,11 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { getAllEvents } from './db/repositories/event-repository';
 import { getAllSecretaries } from './db/repositories/secretary-repository';
 import { getAllVenues } from './db/repositories/venue-repository';
-import { createEvent, updateEvent, deleteEvent } from './db/repositories/event-repository';
 import termDatesRouter from './routes/termDates';
+import eventsRouter from './api/events';
 
 dotenv.config();
 
@@ -21,15 +20,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: err.message });
 });
 
-app.get('/api/events', async (req, res, next) => {
-  try {
-    const events = await getAllEvents();
-    res.json(events);
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    next(error);
-  }
-});
+// Use the events router for all /api/events routes
+app.use('/api/events', eventsRouter);
 
 app.get('/api/secretaries', async (req, res, next) => {
   try {
@@ -47,36 +39,6 @@ app.get('/api/venues', async (req, res, next) => {
     res.json(venues);
   } catch (error) {
     console.error('Error fetching venues:', error);
-    next(error);
-  }
-});
-
-app.post('/api/events', async (req, res, next) => {
-  try {
-    const newEvent = await createEvent(req.body);
-    res.status(201).json(newEvent);
-  } catch (error) {
-    console.error('Error creating event:', error);
-    next(error);
-  }
-});
-
-app.put('/api/events/:id', async (req, res, next) => {
-  try {
-    const event = await updateEvent({ ...req.body, id: req.params.id });
-    res.json(event);
-  } catch (error) {
-    console.error('Error updating event:', error);
-    next(error);
-  }
-});
-
-app.delete('/api/events/:id', async (req, res, next) => {
-  try {
-    await deleteEvent(req.params.id);
-    res.status(204).send();
-  } catch (error) {
-    console.error('Error deleting event:', error);
     next(error);
   }
 });

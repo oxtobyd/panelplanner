@@ -20,4 +20,5 @@ export interface InterviewEvent {
   notes?: string;
   status: 'Confirmed' | 'Booked' | 'Available';
   impactedSecretaryIds?: number[];
+  historicalAverage?: number;
 }

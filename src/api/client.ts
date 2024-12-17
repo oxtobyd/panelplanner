@@ -10,6 +10,12 @@ const handleResponse = async (response: Response) => {
   return response.json();
 };
 
+export interface HistoricalAttendanceData {
+  events: number;
+  total_candidates: number;
+  avg_per_event: number;
+}
+
 export const api = {
   getEvents: async () => {
     const response = await fetch(`${API_URL}/events`);
@@ -85,6 +91,13 @@ export const api = {
     const response = await fetch(`${API_URL}/term-dates/${id}`, {
       method: 'DELETE',
     });
+    return handleResponse(response);
+  },
+
+  getHistoricalAttendance: async (weekNumber: number, panelType: string): Promise<HistoricalAttendanceData> => {
+    const response = await fetch(
+      `${API_URL}/events/historical-attendance?weekNumber=${weekNumber}&panelType=${panelType}`
+    );
     return handleResponse(response);
   },
 }; 
