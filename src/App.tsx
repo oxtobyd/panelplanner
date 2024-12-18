@@ -279,7 +279,12 @@ function AppContent() {
                   path="/" 
                   element={
                     view === 'calendar' ? (
-                      <Calendar events={events} onEventClick={handleEventClick} />
+                      <Calendar 
+                        events={events} 
+                        onEventClick={handleEventClick}
+                        secretaryFilter={secretaryFilter}
+                        onSecretaryFilterChange={setSecretaryFilter}
+                      />
                     ) : (
                       <EventTable 
                         events={events} 

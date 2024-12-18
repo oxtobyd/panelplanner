@@ -27,9 +27,16 @@ import { termDatesApi, TermDate } from '../api/termDates';
 interface CalendarProps {
   events: InterviewEvent[];
   onEventClick: (event: InterviewEvent) => void;
+  secretaryFilter: string;
+  onSecretaryFilterChange: (value: string) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
+const Calendar: React.FC<CalendarProps> = ({ 
+  events, 
+  onEventClick,
+  secretaryFilter,
+  onSecretaryFilterChange 
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bankHolidays, setBankHolidays] = useState<string[]>([]);
   const [termDates, setTermDates] = useState<TermDate[]>([]);
@@ -129,6 +136,44 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
     }
   };
 
+  // Filter events based on secretary - only for Panels and Carousels
+  const filteredEvents = events.filter(event => {
+    // Always show non-Panel/Carousel events
+    if (event.type !== 'Panel' && event.type !== 'Carousel') {
+      return true;
+    }
+    
+    // Apply secretary filter only to Panels and Carousels
+    return secretaryFilter === 'all' || event.secretary?.name === secretaryFilter;
+  });
+
+  // Get unique secretaries for filter dropdown - only from Panels and Carousels
+  const uniqueSecretaries = Array.from(
+    new Set(
+      events
+        .filter(event => event.type === 'Panel' || event.type === 'Carousel')
+        .map(event => event.secretary?.name)
+    )
+  )
+    .filter(Boolean)
+    .sort();
+
+  // Update the select label to be more specific
+  <div className="flex items-center space-x-2">
+    <select
+      value={secretaryFilter}
+      onChange={(e) => onSecretaryFilterChange(e.target.value)}
+      className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+    >
+      <option value="all">All Panel Secretaries</option>
+      {uniqueSecretaries.map((secretary) => (
+        <option key={secretary} value={secretary}>
+          {secretary}
+        </option>
+      ))}
+    </select>
+  </div>
+
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Calendar header */}
@@ -171,6 +216,22 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
               </button>
             </div>
           </div>
+
+          {/* Add secretary filter */}
+          <div className="flex items-center space-x-2">
+            <select
+              value={secretaryFilter}
+              onChange={(e) => onSecretaryFilterChange(e.target.value)}
+              className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+            >
+              <option value="all">All Panel Secretaries</option>
+              {uniqueSecretaries.map((secretary) => (
+                <option key={secretary} value={secretary}>
+                  {secretary}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -192,7 +253,7 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
               return <div key={`empty-${dayIdx}`} className="min-h-[8rem] p-2 border-r border-b" />;
             }
             
-            const dayEvents = events.filter(event => {
+            const dayEvents = filteredEvents.filter(event => {
               if (event.type === 'Panel') {
                 // For Panel events, check if the day falls within the 3-day range
                 const eventStart = new Date(event.date);
