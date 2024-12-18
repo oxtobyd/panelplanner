@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, ArrowUpDown, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { Table, ArrowUpDown, Calendar as CalendarIcon, Filter, ExternalLink } from 'lucide-react';
 import { InterviewEvent, InterviewType } from '../types';
 import { calculateReportDueDate, fetchBankHolidays, calculatePaperworkDueDate } from '../utils/dateCalculations';
 import { format, differenceInDays } from 'date-fns';
@@ -289,7 +289,7 @@ const EventTable: React.FC<EventTableProps> = ({
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         event.type === 'Panel' ? 'bg-blue-100 text-blue-800' :
                         event.type === 'Carousel' ? 'bg-green-100 text-green-800' :
@@ -302,6 +302,18 @@ const EventTable: React.FC<EventTableProps> = ({
                           ? `${event.type} ${event.panelNumber}` 
                           : event.type}
                       </span>
+                      {(event.type === 'Panel' || event.type === 'Carousel') && event.helperPanelId && (
+                        <a
+                          href={`https://helper.oxtobyhome.co.uk/panels/${event.helperPanelId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Open in Helper"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

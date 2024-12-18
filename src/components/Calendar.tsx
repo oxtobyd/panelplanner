@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  ExternalLink
 } from 'lucide-react';
 import { fetchBankHolidays } from '../utils/dateCalculations';
 import { termDatesApi, TermDate } from '../api/termDates';
@@ -254,11 +255,25 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
                         ${event.type === 'Panel' && !isSameDay(new Date(event.date), day) ? 'opacity-75' : ''}
                       `}
                     >
-                      <div className="font-medium">
-                        {event.type === 'Panel' && !isSameDay(new Date(event.date), day) ? '(cont.)' : ''}
-                        {event.type === 'Panel' || event.type === 'Carousel' 
-                          ? `${event.type} ${event.panelNumber}` 
-                          : event.type}
+                      <div className="font-medium flex items-center justify-between">
+                        <span>
+                          {event.type === 'Panel' && !isSameDay(new Date(event.date), day) ? '(cont.)' : ''}
+                          {event.type === 'Panel' || event.type === 'Carousel' 
+                            ? `${event.type} ${event.panelNumber}` 
+                            : event.type}
+                        </span>
+                        {(event.type === 'Panel' || event.type === 'Carousel') && event.helperPanelId && (
+                          <a
+                            href={`https://helper.oxtobyhome.co.uk/panels/${event.helperPanelId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-current hover:opacity-75"
+                            title="Open in Helper"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 text-[10px]">
                         <Users className="h-3 w-3" />

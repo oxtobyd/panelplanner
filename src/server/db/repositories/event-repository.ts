@@ -34,7 +34,8 @@ export async function getAllEvents(): Promise<InterviewEvent[]> {
         e.notes,
         e.status,
         e.impacted_secretary_ids as "impactedSecretaryIds",
-        (SELECT avg_per_event FROM get_historical_attendance(EXTRACT(WEEK FROM e.date)::integer, e.type)) as "historicalAverage"
+        (SELECT avg_per_event FROM get_historical_attendance(EXTRACT(WEEK FROM e.date)::integer, e.type)) as "historicalAverage",
+        get_panel_id_from_name(e.panel_number) as "helperPanelId"
       FROM panel_events e
       JOIN panel_venues v ON e.venue_id = v.id
       LEFT JOIN panel_secretaries s ON e.secretary_id = s.id

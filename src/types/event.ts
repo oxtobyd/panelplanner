@@ -7,6 +7,7 @@ export interface InterviewEvent {
   id: string;
   type: InterviewType;
   panelNumber: string;
+  helperPanelId?: number;
   date: Date;
   time?: string;
   weekNumber: number;
