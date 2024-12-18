@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Building } from 'lucide-react';
 import { InterviewEvent, Venue } from '../types';
 
@@ -9,15 +9,22 @@ interface VenueAllocationProps {
 }
 
 const VenueAllocation: React.FC<VenueAllocationProps> = ({ venues = [], events = [], onVenueClick }) => {
+  const [seasonFilter, setSeasonFilter] = useState<string>('all');
+  
+  // Get unique seasons from events
+  const uniqueSeasons = Array.from(new Set(events.map(event => event.season))).sort().reverse();
+
   const getVenueEvents = (venue: Venue) => {
     if (!venue || !events) return { panels: 0, carousels: 0 };
     
-    const venueEvents = events.filter(event => {
-      return String(event?.venue?.id) === String(venue.id);
+    const filteredEvents = events.filter(event => {
+      const matchesVenue = String(event?.venue?.id) === String(venue.id);
+      const matchesSeason = seasonFilter === 'all' || event.season === seasonFilter;
+      return matchesVenue && matchesSeason;
     });
     
-    const panels = venueEvents.filter(event => event.type === 'Panel').length;
-    const carousels = venueEvents.filter(event => event.type === 'Carousel').length;
+    const panels = filteredEvents.filter(event => event.type === 'Panel').length;
+    const carousels = filteredEvents.filter(event => event.type === 'Carousel').length;
     
     return { panels, carousels };
   };
@@ -60,10 +67,22 @@ const VenueAllocation: React.FC<VenueAllocationProps> = ({ venues = [], events =
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Building className="w-5 h-5" />
-          Venue Allocation
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Building className="w-5 h-5" />
+            Venue Allocation
+          </h2>
+          <select
+            value={seasonFilter}
+            onChange={(e) => setSeasonFilter(e.target.value)}
+            className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">All Seasons</option>
+            {uniqueSeasons.map(season => (
+              <option key={season} value={season}>{season}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="p-4 space-y-4">
         {/* Online Venues */}

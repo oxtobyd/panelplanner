@@ -1,7 +1,7 @@
 import { InterviewEvent, Secretary, Venue } from '../types';
 import { TermDate } from './termDates';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {

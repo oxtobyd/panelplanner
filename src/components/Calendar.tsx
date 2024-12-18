@@ -62,7 +62,25 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
   const days = useMemo(() => {
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
-    return eachDayOfInterval({ start, end });
+    
+    // Get all days in the month
+    const daysInMonth = eachDayOfInterval({ start, end });
+    
+    // Get the day of week of the first day (0 = Sunday, 6 = Saturday)
+    const firstDayOfWeek = start.getDay();
+    
+    // Create array for all cells needed in the calendar
+    const calendarDays = [];
+    
+    // Add empty cells for days before the first of the month
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      calendarDays.push(null);
+    }
+    
+    // Add the actual days of the month
+    calendarDays.push(...daysInMonth);
+    
+    return calendarDays;
   }, [currentDate]);
 
   const isInTerm = (date: Date) => {
@@ -92,19 +110,21 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
   };
 
   const getEventStyles = (event: InterviewEvent) => {
+    const baseStyle = event.status === 'Cancelled' ? 'line-through opacity-75 ' : '';
+    
     switch (event.type) {
       case 'Panel':
-        return 'bg-blue-100 text-blue-800 border border-blue-200';
+        return baseStyle + 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'Carousel':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return baseStyle + 'bg-green-100 text-green-800 border border-green-200';
       case 'TeamResidential':
-        return 'bg-purple-100 text-purple-800 border border-purple-200';
+        return baseStyle + 'bg-purple-100 text-purple-800 border border-purple-200';
       case 'Training':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        return baseStyle + 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'CandidatesPanel':
-        return 'bg-red-100 text-red-800 border border-red-200';
+        return baseStyle + 'bg-red-100 text-red-800 border border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
+        return baseStyle + 'bg-gray-100 text-gray-800 border border-gray-200';
     }
   };
 
@@ -166,6 +186,11 @@ const Calendar: React.FC<CalendarProps> = ({ events, onEventClick }) => {
         </div>
         <div className="grid grid-cols-7 text-sm">
           {days.map((day, dayIdx) => {
+            if (!day) {
+              // Render empty cell for padding at start of month
+              return <div key={`empty-${dayIdx}`} className="min-h-[8rem] p-2 border-r border-b" />;
+            }
+            
             const dayEvents = events.filter(event => {
               if (event.type === 'Panel') {
                 // For Panel events, check if the day falls within the 3-day range

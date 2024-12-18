@@ -33,6 +33,8 @@ const EventTable: React.FC<EventTableProps> = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [reportDueDates, setReportDueDates] = useState<{ [key: string]: Date }>({});
   const [typeFilter, setTypeFilter] = useState<InterviewType | 'all'>('all');
+  const [showFutureOnly, setShowFutureOnly] = useState(true);
+  const [seasonFilter, setSeasonFilter] = useState<string>('all');
 
   useEffect(() => {
     const loadReportDueDates = async () => {
@@ -71,12 +73,17 @@ const EventTable: React.FC<EventTableProps> = ({
   // Get unique venues for filter dropdown
   const uniqueVenues = [...new Set(events.map(event => event.venue?.name))].filter(Boolean).sort();
 
+  // Get unique seasons for filter dropdown
+  const uniqueSeasons = Array.from(new Set(events.map(event => event.season))).sort().reverse();
+
   // Filter events
   const filteredEvents = events.filter(event => {
     const matchesType = typeFilter === 'all' || event.type === typeFilter;
     const matchesSecretary = secretaryFilter === 'all' || event.secretary?.name === secretaryFilter;
     const matchesVenue = venueFilter === 'all' || event.venue?.name === venueFilter;
-    return matchesType && matchesSecretary && matchesVenue;
+    const matchesFuture = !showFutureOnly || new Date(event.date) >= new Date();
+    const matchesSeason = seasonFilter === 'all' || event.season === seasonFilter;
+    return matchesType && matchesSecretary && matchesVenue && matchesFuture && matchesSeason;
   });
 
   // Sort filtered events
@@ -181,7 +188,28 @@ const EventTable: React.FC<EventTableProps> = ({
           <Table className="w-5 h-5" />
           Event List
         </h2>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showFutureOnly}
+              onChange={(e) => setShowFutureOnly(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Future Events Only
+          </label>
+          <select
+            value={seasonFilter}
+            onChange={(e) => setSeasonFilter(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            <option value="all">All Seasons</option>
+            {uniqueSeasons.map(season => (
+              <option key={season} value={season}>
+                {season}
+              </option>
+            ))}
+          </select>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as InterviewType | 'all')}
@@ -249,16 +277,15 @@ const EventTable: React.FC<EventTableProps> = ({
                   onClick={() => onEventClick(event)}
                   className="hover:bg-gray-50 cursor-pointer transition-colors duration-150"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {format(new Date(event.date), 'dd MMM yyyy')}
-                    {event.type === 'Carousel' && event.time && (
-                      <span className="ml-2 text-gray-500">
-                        {event.time.slice(0, 5)}
-                      </span>
-                    )}
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      {event.season}
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2 text-gray-900">
+                      <span className="font-medium">{format(new Date(event.date), 'dd/MM/yyyy')}</span>
+                      {event.time && (
+                        <span className="text-gray-500">
+                          {format(new Date(`2000-01-01T${event.time}`), 'HH:mm')}
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -284,9 +311,16 @@ const EventTable: React.FC<EventTableProps> = ({
                     {event.secretary?.name || 'Unassigned'}
                   </td>
                   <td className="px-4 py-2 text-sm">
-                    {!['TeamResidential', 'Training', 'Conference'].includes(event.type) 
-                      ? event.actualAttendance || '-'
-                      : '-'}
+                    {!['TeamResidential', 'Training', 'Conference'].includes(event.type) ? (
+                      <div className="flex flex-col">
+                        <span>{event.candidateCount || '-'}</span>
+                        <span className="text-xs text-gray-500">
+                          {event.actualAttendance > 0 ? `(Total: ${event.actualAttendance})` : ''}
+                        </span>
+                      </div>
+                    ) : (
+                      '-'
+                    )}
                   </td>
                   <td className="px-4 py-2 text-sm">
                     {['Panel', 'Carousel'].includes(event.type) && event.historicalAverage ? (
@@ -315,6 +349,7 @@ const EventTable: React.FC<EventTableProps> = ({
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       event.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
                       event.status === 'Booked' ? 'bg-blue-100 text-blue-800' :
+                      event.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {event.status}

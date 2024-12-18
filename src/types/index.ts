@@ -24,6 +24,6 @@ export type InterviewEvent = {
   estimatedAttendance: number;
   actualAttendance: number;
   notes?: string;
-  status: 'Confirmed' | 'Booked' | 'Available';
+  status: 'Confirmed' | 'Booked' | 'Available' | 'Cancelled';
   impactedSecretaryIds?: number[];
 };

@@ -24,6 +24,11 @@ export async function getAllEvents(): Promise<InterviewEvent[]> {
         ) as secretary,
         e.estimated_attendance as "estimatedAttendance",
         e.actual_attendance as "actualAttendance",
+        (SELECT COUNT(*) 
+         FROM panels p 
+         JOIN panel_attendees pa ON pa.panel_id = p.id 
+         WHERE p.panel_name = e.panel_number 
+         AND pa.attendee_type = 'C') as "candidateCount",
         e.report_date as "reportDate",
         e.report_deadline as "reportDeadline",
         e.notes,

@@ -29,9 +29,9 @@ const EventForm: React.FC<EventFormProps> = ({
     ...((!['TeamResidential', 'Training', 'Conference'].includes(event?.type || 'Panel')) && {
       secretary: secretaries[0],
       panelNumber: '',
-      weekNumber: 1,
-      estimatedAttendance: 12,
-      actualAttendance: 0,
+      weekNumber: 0,
+      //estimatedAttendance: 12,
+      //actualAttendance: 0,
     })
   });
 
@@ -52,9 +52,9 @@ const EventForm: React.FC<EventFormProps> = ({
         type: event.type || 'Panel',
         status: event.status || 'Available',
         panelNumber: event.panelNumber || '',
-        weekNumber: event.weekNumber || 1,
-        estimatedAttendance: event.estimatedAttendance || 12,
-        actualAttendance: event.actualAttendance || 0,
+        weekNumber: event.weekNumber || 0,
+        estimatedAttendance: event.estimatedAttendance,
+        //actualAttendance: event.actualAttendance || 0,
         notes: event.notes || ''
       });
     }
@@ -92,15 +92,15 @@ const EventForm: React.FC<EventFormProps> = ({
       panelNumber: formData.panelNumber || '',
       date: new Date(formData.date as string),
       time: formData.time,
-      weekNumber: formData.weekNumber || 1,
+      weekNumber: formData.weekNumber || 0,
       venue: formData.venue as Venue,
       secretary: isSpecialEvent ? undefined : (formData.secretary as Secretary),
-      estimatedAttendance: formData.estimatedAttendance || 12,
+      estimatedAttendance: formData.estimatedAttendance,
       maxAttendees: formData.maxAttendees || 30,
       actualAttendance: formData.actualAttendance || 0,
       reportDate: formData.reportDate ? new Date(formData.reportDate as string) : new Date(),
       reportDeadline: formData.reportDeadline ? new Date(formData.reportDeadline as string) : new Date(),
-      status: formData.status as 'Confirmed' | 'Booked' | 'Available',
+      status: formData.status as 'Confirmed' | 'Booked' | 'Available' | 'Cancelled',
       notes: formData.notes,
       impactedSecretaryIds: formData.impactedSecretaryIds || [],
     };
@@ -225,15 +225,6 @@ const EventForm: React.FC<EventFormProps> = ({
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Actual Attendance</label>
-                  <input
-                    type="number"
-                    value={formData.actualAttendance}
-                    onChange={(e) => setFormData({ ...formData, actualAttendance: parseInt(e.target.value) })}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
               </div>
             )}
 
@@ -262,12 +253,13 @@ const EventForm: React.FC<EventFormProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' | 'Cancelled' })}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 >
                   <option value="Available">Available</option>
                   <option value="Booked">Booked</option>
                   <option value="Confirmed">Confirmed</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
             </div>

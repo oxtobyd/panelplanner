@@ -1,8 +1,34 @@
-import { Secretary, InterviewEvent } from '../types';
+import { Secretary, InterviewEvent, InterviewType } from '../types';
 import { differenceInDays } from 'date-fns';
 
+function getMinimumRestDays(currentType: InterviewType, nextType: InterviewType): number {
+  // Panel -> Panel: 21 days
+  if (currentType === 'Panel' && nextType === 'Panel') {
+    return 21;
+  }
+  // Carousel -> Carousel: 7 days
+  if (currentType === 'Carousel' && nextType === 'Carousel') {
+    return 7;
+  }
+  // Carousel -> Panel: 14 days
+  if (currentType === 'Carousel' && nextType === 'Panel') {
+    return 14;
+  }
+  // Panel -> Carousel: 10 days
+  if (currentType === 'Panel' && nextType === 'Carousel') {
+    return 10;
+  }
+  // Default fallback
+  return 7;
+}
+
 export function calculateRestViolations(events: InterviewEvent[]) {
-  const sortedEvents = [...events].sort((a, b) => 
+  // Filter out non-Panel and non-Carousel events
+  const relevantEvents = events.filter(
+    event => event.type === 'Panel' || event.type === 'Carousel'
+  );
+  
+  const sortedEvents = [...relevantEvents].sort((a, b) => 
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
   
@@ -12,13 +38,19 @@ export function calculateRestViolations(events: InterviewEvent[]) {
   };
 
   for (let i = 0; i < sortedEvents.length - 1; i++) {
-    const currentDate = new Date(sortedEvents[i].date);
-    const nextDate = new Date(sortedEvents[i + 1].date);
+    const currentEvent = sortedEvents[i];
+    const nextEvent = sortedEvents[i + 1];
+    const currentDate = new Date(currentEvent.date);
+    const nextDate = new Date(nextEvent.date);
     const daysBetween = differenceInDays(nextDate, currentDate);
     
-    if (daysBetween < 7) {
+    const minimumDays = getMinimumRestDays(currentEvent.type, nextEvent.type);
+    
+    if (daysBetween < minimumDays) {
       violations.dates.push(nextDate);
-      violations.details.push(`Less than 7 days between events`);
+      violations.details.push(
+        `${daysBetween} days between ${currentEvent.type} and ${nextEvent.type} (minimum ${minimumDays})`
+      );
     }
   }
 
@@ -26,21 +58,6 @@ export function calculateRestViolations(events: InterviewEvent[]) {
 }
 
 export function distributeWorkload(secretaries: Secretary[], events: InterviewEvent[]): Secretary[] {
-  // Debug first secretary and their events
-  const firstSecretary = secretaries[0];
-  console.log('Debug first secretary:', {
-    secretary: firstSecretary,
-    firstEvent: events[0],
-    secondEvent: events[1],
-    comparison: {
-      secretaryId: firstSecretary.id,
-      firstEventSecretaryId: events[0]?.secretary?.id,
-      secondEventSecretaryId: events[1]?.secretary?.id,
-      match1: events[0]?.secretary?.id === firstSecretary.id,
-      match2: events[1]?.secretary?.id === firstSecretary.id
-    }
-  });
-
   return secretaries.map(secretary => {
     const secretaryEvents = events.filter(event => 
       String(event.secretary?.id) === secretary.id || 
@@ -57,7 +74,8 @@ export function distributeWorkload(secretaries: Secretary[], events: InterviewEv
           panels,
           carousels,
           total: panels + carousels,
-          restViolations: calculateRestViolations(secretaryEvents)
+          restViolations: calculateRestViolations(secretaryEvents),
+          events: secretaryEvents
         }
       }
     };
