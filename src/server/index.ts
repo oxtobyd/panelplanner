@@ -5,6 +5,8 @@ import { getAllSecretaries } from './db/repositories/secretary-repository';
 import { getAllVenues } from './db/repositories/venue-repository';
 import termDatesRouter from './routes/termDates';
 import eventsRouter from './api/events';
+import resourcesRouter from './routes/resources';
+import eventResourcesRouter from './routes/event-resources';
 
 dotenv.config();
 
@@ -22,6 +24,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Use the events router for all /api/events routes
 app.use('/api/events', eventsRouter);
+app.use('/api/resources', resourcesRouter);
+app.use('/api/events', eventResourcesRouter);
 
 app.get('/api/secretaries', async (req, res, next) => {
   try {
@@ -44,6 +48,7 @@ app.get('/api/venues', async (req, res, next) => {
 });
 
 app.use('/api/term-dates', termDatesRouter);
+app.use('/resources', resourcesRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

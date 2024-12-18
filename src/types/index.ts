@@ -1,3 +1,5 @@
+import { Resource } from './resource';
+
 export type { InterviewType } from './event';
 
 export type Venue = {
@@ -26,4 +28,5 @@ export type InterviewEvent = {
   notes?: string;
   status: 'Confirmed' | 'Booked' | 'Available' | 'Cancelled';
   impactedSecretaryIds?: number[];
+  resources?: Resource[];
 };

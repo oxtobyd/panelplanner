@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { InterviewEvent, Secretary, Venue } from '../types';
 import { api, HistoricalAttendanceData } from '../api/client';
 import HistoricalAttendanceTable from './HistoricalAttendanceTable';
+import { ResourceSelector } from './ResourceSelector';
 
 interface EventFormProps {
   event: InterviewEvent | null;
@@ -37,6 +38,7 @@ const EventForm: React.FC<EventFormProps> = ({
 
   const [historicalData, setHistoricalData] = useState<HistoricalAttendanceData | null>(null);
   const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
+  const [resources, setResources] = useState<Resource[]>([]);
 
   const isSpecialEvent = ['TeamResidential', 'Training', 'Conference'].includes(formData.type as string);
 
@@ -107,9 +109,13 @@ const EventForm: React.FC<EventFormProps> = ({
     onSubmit(submissionData);
   };
 
+  const handleResourceChange = async (updatedResources: Resource[]) => {
+    setResources(updatedResources);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 my-8 max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">
@@ -130,8 +136,8 @@ const EventForm: React.FC<EventFormProps> = ({
         
         <div className="px-6 py-4">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <select
                   value={formData.type}
@@ -149,7 +155,7 @@ const EventForm: React.FC<EventFormProps> = ({
 
               {!isSpecialEvent && (
                 <>
-                  <div>
+                  <div className="col-span-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Secretary</label>
                     <select
                       value={formData.secretary?.id}
@@ -167,18 +173,74 @@ const EventForm: React.FC<EventFormProps> = ({
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Panel Number</label>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                     <input
-                      type="text"
-                      value={formData.panelNumber}
-                      onChange={(e) => setFormData({ ...formData, panelNumber: e.target.value })}
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      required
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                    <input
+                      type="time"
+                      value={formData.time || '10:00'}
+                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' | 'Cancelled' })}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                    >
+                      <option value="Available">Available</option>
+                      <option value="Booked">Booked</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
                   </div>
                 </>
               )}
             </div>
+
+            {!isSpecialEvent && (
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Attendance</label>
+                  <input
+                    type="number"
+                    value={formData.estimatedAttendance}
+                    onChange={(e) => setFormData({ ...formData, estimatedAttendance: parseInt(e.target.value) })}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Panel Number</label>
+                  <input
+                    type="text"
+                    value={formData.panelNumber}
+                    onChange={(e) => setFormData({ ...formData, panelNumber: e.target.value })}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Week Number</label>
+                  <input
+                    type="number"
+                    value={formData.weekNumber}
+                    onChange={(e) => setFormData({ ...formData, weekNumber: parseInt(e.target.value) })}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {isSpecialEvent && (
               <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -204,65 +266,6 @@ const EventForm: React.FC<EventFormProps> = ({
                 </div>
               </div>
             )}
-
-            {!isSpecialEvent && (
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Week Number</label>
-                  <input
-                    type="number"
-                    value={formData.weekNumber}
-                    onChange={(e) => setFormData({ ...formData, weekNumber: parseInt(e.target.value) })}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Attendance</label>
-                  <input
-                    type="number"
-                    value={formData.estimatedAttendance}
-                    onChange={(e) => setFormData({ ...formData, estimatedAttendance: parseInt(e.target.value) })}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                <input
-                  type="time"
-                  value={formData.time || '10:00'}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'Confirmed' | 'Booked' | 'Available' | 'Cancelled' })}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value="Available">Available</option>
-                  <option value="Booked">Booked</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-              </div>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
@@ -298,6 +301,18 @@ const EventForm: React.FC<EventFormProps> = ({
               isLoading={isLoadingHistorical} 
               weekNumber={formData.weekNumber}
             />
+
+            <div className="space-y-4 mt-4">
+              <h3 className="text-lg font-medium">Resources</h3>
+              {event?.id ? (
+                <ResourceSelector 
+                  eventId={event.id} 
+                  onResourcesChange={handleResourceChange}
+                />
+              ) : (
+                <p className="text-sm text-gray-500">Save the event first to assign resources</p>
+              )}
+            </div>
 
             <div className="flex justify-between pt-4 border-t border-gray-200">
               <div className="flex space-x-3">

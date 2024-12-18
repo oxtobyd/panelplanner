@@ -9,6 +9,15 @@ import EventForm from './components/EventForm';
 import SecretaryWorkload from './components/SecretaryWorkload';
 import VenueAllocation from './components/VenueAllocation';
 import TermDateAdmin from './components/TermDateAdmin';
+import Resources from './pages/Resources';
+import { 
+  Calendar as CalendarIcon, 
+  Users, 
+  Building,
+  Menu,
+  X,
+  Archive,
+} from 'lucide-react';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -250,6 +259,24 @@ function AppContent() {
               </svg>
               <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Term Dates</span>
             </Link>
+            <Link
+              to="/resources"
+              className={`${
+                location.pathname === '/resources'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+            >
+              <Archive 
+                className={`${
+                  location.pathname === '/resources'
+                    ? 'text-gray-500'
+                    : 'text-gray-400 group-hover:text-gray-500'
+                } mr-3 flex-shrink-0 h-5 w-5`}
+                aria-hidden="true"
+              />
+              <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Resources</span>
+            </Link>
           </nav>
         </div>
 
@@ -315,6 +342,10 @@ function AppContent() {
                 <Route 
                   path="/term-dates" 
                   element={<TermDateAdmin />} 
+                />
+                <Route 
+                  path="/resources" 
+                  element={<Resources />} 
                 />
               </Routes>
             )}
