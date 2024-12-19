@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { UserCheck } from 'lucide-react';
 import { Secretary } from '../types';
+import SecretaryAvailabilityForm from './SecretaryAvailabilityForm';
+import { availabilityApi } from '../api/availability';
+import { Link } from 'react-router-dom';
+import { Calendar } from 'lucide-react';
 
 interface SecretaryWorkloadProps {
   secretaries: Secretary[];
@@ -9,6 +13,8 @@ interface SecretaryWorkloadProps {
 
 const SecretaryWorkload: React.FC<SecretaryWorkloadProps> = ({ secretaries, onSecretaryClick }) => {
   const [seasonFilter, setSeasonFilter] = useState<string>('all');
+  const [selectedSecretary, setSelectedSecretary] = useState<Secretary | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Get unique seasons from all secretary events
   const uniqueSeasons = Array.from(
@@ -63,6 +69,25 @@ const SecretaryWorkload: React.FC<SecretaryWorkloadProps> = ({ secretaries, onSe
     });
   };
 
+  const handleAvailabilitySubmit = async (isAvailable: boolean, reason?: string) => {
+    if (!selectedSecretary || !selectedDate) return;
+    
+    try {
+      await availabilityApi.updateAvailability(
+        selectedSecretary.id,
+        selectedDate,
+        isAvailable,
+        reason
+      );
+      // Refresh secretary data
+      onSecretaryClick(selectedSecretary);
+      setSelectedSecretary(null);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Failed to update availability:', error);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b">
@@ -104,36 +129,56 @@ const SecretaryWorkload: React.FC<SecretaryWorkloadProps> = ({ secretaries, onSe
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-8 text-center">
-                  {seasonFilter === 'all' 
-                    ? secretary.workload?.upcomingEvents?.panels 
-                    : secretary.workload?.upcomingEvents?.events?.filter(
-                        e => e.type === 'Panel' && e.season === seasonFilter
-                      ).length || 0
-                  }
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-8 text-center">
-                  {seasonFilter === 'all'
-                    ? secretary.workload?.upcomingEvents?.carousels
-                    : secretary.workload?.upcomingEvents?.events?.filter(
-                        e => e.type === 'Carousel' && e.season === seasonFilter
-                      ).length || 0
-                  }
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 w-8 text-center">
-                  {seasonFilter === 'all'
-                    ? secretary.workload?.upcomingEvents?.total
-                    : secretary.workload?.upcomingEvents?.events?.filter(
-                        e => e.season === seasonFilter
-                      ).length || 0
-                  }
-                </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-8 text-center">
+                    {seasonFilter === 'all' 
+                      ? secretary.workload?.upcomingEvents?.panels 
+                      : secretary.workload?.upcomingEvents?.events?.filter(
+                          e => e.type === 'Panel' && e.season === seasonFilter
+                        ).length || 0
+                    }
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 w-8 text-center">
+                    {seasonFilter === 'all'
+                      ? secretary.workload?.upcomingEvents?.carousels
+                      : secretary.workload?.upcomingEvents?.events?.filter(
+                          e => e.type === 'Carousel' && e.season === seasonFilter
+                        ).length || 0
+                    }
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 w-8 text-center">
+                    {seasonFilter === 'all'
+                      ? secretary.workload?.upcomingEvents?.total
+                      : secretary.workload?.upcomingEvents?.events?.filter(
+                          e => e.season === seasonFilter
+                        ).length || 0
+                    }
+                  </span>
+                </div>
+                <Link 
+                  to={`/secretary/${secretary.id}/availability`}
+                  className="p-2 text-gray-400 hover:text-primary-600 rounded-full"
+                  title="Manage Availability"
+                >
+                  <Calendar className="w-5 h-5" />
+                </Link>
               </div>
             </div>
           );
         })}
       </div>
+      {selectedSecretary && selectedDate && (
+        <SecretaryAvailabilityForm
+          secretary={selectedSecretary}
+          date={selectedDate}
+          onSubmit={handleAvailabilitySubmit}
+          onCancel={() => {
+            setSelectedSecretary(null);
+            setSelectedDate(null);
+          }}
+        />
+      )}
     </div>
   );
 };

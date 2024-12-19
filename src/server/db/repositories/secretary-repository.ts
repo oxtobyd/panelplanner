@@ -44,7 +44,7 @@ export async function getSecretaryById(id: number): Promise<Secretary | null> {
   const result = await query(`
     SELECT 
       s.id,
-      s.secretary_name as name,
+      s.name,
       json_agg(json_build_object(
         'date', sa.date,
         'isAvailable', sa.is_available,
@@ -53,7 +53,7 @@ export async function getSecretaryById(id: number): Promise<Secretary | null> {
     FROM panel_secretaries s
     LEFT JOIN secretary_availability sa ON s.id = sa.secretary_id
     WHERE s.id = $1
-    GROUP BY s.id, s.secretary_name
+    GROUP BY s.id, s.name
   `, [id]);
   
   if (!result.rows[0]) return null;
@@ -87,4 +87,14 @@ export async function updateSecretaryAvailability(
     ON CONFLICT (secretary_id, date)
     DO UPDATE SET is_available = $3, reason = $4
   `, [secretaryId, date, isAvailable, reason]);
+}
+
+export async function deleteSecretaryAvailability(
+  secretaryId: number,
+  date: Date
+): Promise<void> {
+  await query(
+    'DELETE FROM secretary_availability WHERE secretary_id = $1 AND date = $2',
+    [secretaryId, date]
+  );
 }

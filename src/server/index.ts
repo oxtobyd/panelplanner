@@ -7,6 +7,7 @@ import termDatesRouter from './routes/termDates';
 import eventsRouter from './api/events';
 import resourcesRouter from './routes/resources';
 import eventResourcesRouter from './routes/event-resources';
+import secretaryRouter from './routes/secretary-routes';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.use('/api/events', eventsRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/events', eventResourcesRouter);
+app.use('/api/secretary', secretaryRouter);
 
 app.get('/api/secretaries', async (req, res, next) => {
   try {

@@ -18,6 +18,7 @@ import {
   X,
   Archive,
 } from 'lucide-react';
+import SecretaryAvailability from './components/SecretaryAvailability';
 
 // Utility function to format date as YYYY-MM-DD
 const formatDate = (date: Date): string => {
@@ -399,6 +400,15 @@ function AppContent() {
                 <Route 
                   path="/resources" 
                   element={<Resources />} 
+                />
+                <Route 
+                  path="/secretary/:id/availability" 
+                  element={
+                    <SecretaryAvailability 
+                      secretaries={secretaries}
+                      onAvailabilityChange={fetchEvents} 
+                    />
+                  } 
                 />
               </Routes>
             )}
