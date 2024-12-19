@@ -32,6 +32,7 @@ function AppContent() {
   const [secretaryFilter, setSecretaryFilter] = useState<string>('all');
   const [venueFilter, setVenueFilter] = useState<string>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [infiniteScroll, setInfiniteScroll] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -311,6 +312,8 @@ function AppContent() {
                         onEventClick={handleEventClick}
                         secretaryFilter={secretaryFilter}
                         onSecretaryFilterChange={setSecretaryFilter}
+                        infiniteScroll={infiniteScroll}
+                        onInfiniteScrollChange={setInfiniteScroll}
                       />
                     ) : (
                       <EventTable 
