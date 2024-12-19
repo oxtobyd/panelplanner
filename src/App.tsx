@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { InterviewEvent, Secretary, Venue } from './types';
 import { api } from './api/client';
@@ -18,6 +18,18 @@ import {
   X,
   Archive,
 } from 'lucide-react';
+
+// Utility function to format date as YYYY-MM-DD
+const formatDate = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// Utility function to get week number
+const getWeekNumber = (date: Date): number => {
+  const startDate = new Date(date.getFullYear(), 0, 1);
+  const days = Math.floor((date.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+  return Math.ceil((days + startDate.getDay() + 1) / 7);
+};
 
 function AppContent() {
   const navigate = useNavigate();
@@ -161,6 +173,47 @@ function AppContent() {
     navigate('/');
   };
 
+  const refreshEvents = useCallback(async () => {
+    try {
+      const updatedEvents = await api.getEvents();
+      setEvents(updatedEvents);
+    } catch (error) {
+      console.error('Error refreshing events:', error);
+    }
+  }, []);
+
+  const handleEventDateChange = async (event: InterviewEvent, newDate: Date) => {
+    try {
+      if (!newDate || !(newDate instanceof Date) || isNaN(newDate.getTime())) {
+        throw new Error('Invalid date provided');
+      }
+
+      console.log('Updating event with new date:', newDate);
+
+      const updatedEvent = {
+        ...event,
+        date: formatDate(newDate),
+        weekNumber: getWeekNumber(newDate)
+      };
+
+      console.log('Updated event object:', updatedEvent);
+
+      await api.updateEvent(updatedEvent);
+      await refreshEvents();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      if (error instanceof Error) {
+        throw new Error(`Failed to update event: ${error.message}`);
+      } else {
+        throw new Error('Failed to update event: Unknown error');
+      }
+    }
+  };
+
+  const handleInfiniteScrollChange = (value: boolean) => {
+    setInfiniteScroll(value);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
@@ -262,11 +315,7 @@ function AppContent() {
             </Link>
             <Link
               to="/resources"
-              className={`${
-                location.pathname === '/resources'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+              className="mt-1 group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-900 hover:bg-gray-50 hover:text-primary-600"
             >
               <Archive 
                 className={`${
@@ -310,10 +359,11 @@ function AppContent() {
                       <Calendar 
                         events={events} 
                         onEventClick={handleEventClick}
+                        onEventDateChange={handleEventDateChange}
                         secretaryFilter={secretaryFilter}
                         onSecretaryFilterChange={setSecretaryFilter}
                         infiniteScroll={infiniteScroll}
-                        onInfiniteScrollChange={setInfiniteScroll}
+                        onInfiniteScrollChange={handleInfiniteScrollChange}
                       />
                     ) : (
                       <EventTable 

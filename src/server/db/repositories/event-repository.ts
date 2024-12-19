@@ -111,67 +111,101 @@ export async function createEvent(event: InterviewEvent): Promise<InterviewEvent
 }
 
 export async function updateEvent(event: InterviewEvent): Promise<InterviewEvent> {
-  console.log('Repository Update - Time value:', event.time);
-  const result = await query(`
-    UPDATE panel_events SET
-      type = $1,
-      panel_number = $2,
-      date = $3,
-      time = $4,
-      week_number = $5,
-      venue_id = $6,
-      secretary_id = $7,
-      estimated_attendance = $8,
-      actual_attendance = $9,
-      report_date = $10,
-      report_deadline = $11,
-      notes = $12,
-      status = $13,
-      impacted_secretary_ids = $14
-    WHERE id = $15
-    RETURNING 
-      id,
-      type,
-      panel_number as "panelNumber",
-      date,
-      time,
-      calculate_season(date) as season,
-      week_number as "weekNumber",
-      (SELECT json_build_object(
-        'id', v.id,
-        'name', v.name,
-        'capacity', v.default_candidate_count
-      ) FROM panel_venues v WHERE v.id = venue_id) as venue,
-      (SELECT json_build_object(
-        'id', s.id,
-        'name', s.name
-      ) FROM panel_secretaries s WHERE s.id = secretary_id) as secretary,
-      estimated_attendance as "estimatedAttendance",
-      actual_attendance as "actualAttendance",
-      report_date as "reportDate",
-      report_deadline as "reportDeadline",
-      notes,
-      status,
-      impacted_secretary_ids as "impactedSecretaryIds"
-  `, [
-    event.type,
-    event.panelNumber,
-    event.date,
-    event.time,
-    event.weekNumber,
-    event.venue.id,
-    event.secretary?.id,
-    event.estimatedAttendance,
-    event.actualAttendance,
-    event.reportDate,
-    event.reportDeadline,
-    event.notes,
-    event.status,
-    event.impactedSecretaryIds,
-    event.id
-  ]);
-  
-  return result.rows[0];
+  try {
+    // First, get the existing event
+    const existingEvent = await query(`
+      SELECT date FROM panel_events WHERE id = $1
+    `, [event.id]);
+
+    if (!existingEvent.rows[0]) {
+      throw new Error(`No event found with id ${event.id}`);
+    }
+
+    const existingDate = new Date(existingEvent.rows[0].date);
+    const newDate = new Date(event.date);
+    const today = new Date();
+    
+    // Set times to midnight for consistent comparison
+    existingDate.setHours(0, 0, 0, 0);
+    newDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    // Only validate date changes for future events
+    if (existingDate >= today && newDate < today) {
+      throw new Error('Cannot move future events to past dates');
+    }
+
+    console.log('Repository Update - Time value:', event.time);
+    
+    const result = await query(`
+      UPDATE panel_events SET
+        type = $1,
+        panel_number = $2,
+        date = $3,
+        time = $4,
+        week_number = $5,
+        venue_id = $6,
+        secretary_id = $7,
+        estimated_attendance = $8,
+        actual_attendance = $9,
+        report_date = $10,
+        report_deadline = $11,
+        notes = $12,
+        status = $13,
+        impacted_secretary_ids = $14,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $15
+      RETURNING 
+        id,
+        type,
+        panel_number as "panelNumber",
+        date,
+        time,
+        calculate_season(date) as season,
+        week_number as "weekNumber",
+        (SELECT json_build_object(
+          'id', v.id,
+          'name', v.name,
+          'capacity', v.default_candidate_count
+        ) FROM panel_venues v WHERE v.id = venue_id) as venue,
+        (SELECT json_build_object(
+          'id', s.id,
+          'name', s.name
+        ) FROM panel_secretaries s WHERE s.id = secretary_id) as secretary,
+        estimated_attendance as "estimatedAttendance",
+        actual_attendance as "actualAttendance",
+        report_date as "reportDate",
+        report_deadline as "reportDeadline",
+        notes,
+        status,
+        impacted_secretary_ids as "impactedSecretaryIds"
+    `, [
+      event.type,
+      event.panelNumber,
+      event.date,
+      event.time,
+      event.weekNumber,
+      event.venue?.id,
+      event.secretary?.id,
+      event.estimatedAttendance,
+      event.actualAttendance,
+      event.reportDate,
+      event.reportDeadline,
+      event.notes,
+      event.status,
+      event.impactedSecretaryIds,
+      event.id
+    ]);
+
+    if (!result.rows[0]) {
+      throw new Error(`Failed to update event ${event.id}`);
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('Repository Update - Error:', error);
+    throw error;
+  }
 }
 
 export async function deleteEvent(id: string): Promise<void> {
