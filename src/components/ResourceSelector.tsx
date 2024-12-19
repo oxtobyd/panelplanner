@@ -162,23 +162,24 @@ export const ResourceSelector: React.FC<ResourceSelectorProps> = ({ eventId, onR
             {availableResources
               .filter(r => r.resourceType === activeTab)
               .map(resource => (
-                <li key={resource.id} className="py-2 flex justify-between items-center">
+                <li 
+                  key={resource.id} 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAssign(resource.id);
+                  }}
+                  className="py-2 px-2 flex justify-between items-center hover:bg-gray-50 cursor-pointer rounded-md transition-colors"
+                >
                   <div>
                     <span className="font-medium">{resource.name}</span>
                     <span className="ml-2 text-sm text-gray-500">
                       {resource.timesUsed > 0 && `(Used ${resource.timesUsed} times)`}
                     </span>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAssign(resource.id);
-                    }}
-                    className="text-primary-600 hover:text-primary-800 text-sm"
-                  >
+                  <span className="text-primary-600 hover:text-primary-800 text-sm">
                     Assign
-                  </button>
+                  </span>
                 </li>
               ))}
           </ul>
