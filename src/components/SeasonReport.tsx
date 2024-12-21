@@ -368,66 +368,58 @@ const SeasonReport: React.FC<SeasonReportProps> = ({ events, bankHolidays, termD
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Season Report</h2>
-      
-      {/* Rules Description Box */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">Validation Rules</h3>
-        <h4 className="text-sm text-blue-700 mb-2 italic">Note: All rules apply only to active (non-cancelled) events</h4>
-        <ul className="list-disc list-inside text-blue-800 space-y-1">
-          <li>Panels and Carousels must not be scheduled on weekends</li>
-          <li>Panels and Carousels must not be scheduled on bank holidays</li>
-          <li>Carousels can only be scheduled on Tuesday, Wednesday, or Friday</li>
-          <li>No more than 4 Carousels can be scheduled over any two consecutive days</li>
-          <li>At least 20% of Carousels must be scheduled in the afternoon (after 12:00)</li>
-          <li>No Panels can be scheduled in the same week as a Candidates Panel</li>
-          <li>Panel Secretary Robert Avery is unavailable for Panels and Carousels on Mondays and Tuesdays</li>
-          <li>Panel Secretaries Robert Avery and Carys Walsh are limited to 8 Carousels and 4 Panels per season</li>
-          <li>Panel Secretary Joy Gilliver is limited to 3 Carousels and 2 Panels per season</li>
-          <li>No Panels or Carousels can be scheduled during Holy Week (the week before Easter Sunday)</li>
-          <li>At least 10% of Panels and Carousels must be scheduled during term holidays</li>
-          <li>Panel Secretaries must have at least 7 days between Carousels</li>
-          <li>Panel Secretaries must have at least 21 days between Panels</li>
-        </ul>
-      </div>
-      
-      {/* Season Selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Select Season
-        </label>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold">Season Report</h2>
         <select
           value={selectedSeason}
           onChange={(e) => {
             setSelectedSeason(e.target.value);
             validateEvents(e.target.value);
           }}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+          className="w-64 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
         >
           <option value="">Select a season...</option>
           {seasons.map(season => (
-            <option key={season} value={season}>
-              {season}
-            </option>
+            <option key={season} value={season}>{season}</option>
           ))}
         </select>
       </div>
 
-      {/* Validation Results */}
+      {/* Collapsible Rules Description */}
+      <details className="mb-4 bg-blue-50 border border-blue-200 rounded-md">
+        <summary className="p-3 text-lg font-semibold text-blue-900 cursor-pointer hover:bg-blue-100">
+          Validation Rules
+        </summary>
+        <div className="p-3 pt-0">
+          <h4 className="text-sm text-blue-700 mb-2 italic">Note: All rules apply only to active (non-cancelled) events</h4>
+          <ul className="list-disc list-inside text-blue-800 space-y-1 text-sm">
+            <li>Panels and Carousels must not be scheduled on weekends</li>
+            <li>Panels and Carousels must not be scheduled on bank holidays</li>
+            <li>Carousels can only be scheduled on Tuesday, Wednesday, or Friday</li>
+            <li>No more than 4 Carousels can be scheduled over any two consecutive days</li>
+            <li>At least 20% of Carousels must be scheduled in the afternoon (after 12:00)</li>
+            <li>No Panels can be scheduled in the same week as a Candidates Panel</li>
+            <li>Panel Secretary Robert Avery is unavailable for Panels and Carousels on Mondays and Tuesdays</li>
+            <li>Panel Secretaries Robert Avery and Carys Walsh are limited to 8 Carousels and 4 Panels per season</li>
+            <li>Panel Secretary Joy Gilliver is limited to 3 Carousels and 2 Panels per season</li>
+            <li>No Panels or Carousels can be scheduled during Holy Week (the week before Easter Sunday)</li>
+            <li>At least 10% of Panels and Carousels must be scheduled during term holidays</li>
+            <li>Panel Secretaries must have at least 7 days between Carousels</li>
+            <li>Panel Secretaries must have at least 21 days between Panels</li>
+          </ul>
+        </div>
+      </details>
+
       {selectedSeason && (
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Validation Results</h3>
-          
-          {/* Rules Status */}
-          <div className="mb-6 bg-white border border-gray-200 rounded-md p-4">
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left Column: Rules Status */}
+          <div className="bg-white border border-gray-200 rounded-md p-4">
             <h4 className="text-md font-semibold text-gray-900 mb-3">Rules Status</h4>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {validationIssues.length === 0 ? (
-                <div className="text-green-600">
-                  ✓ All rules passed
-                </div>
+                <div className="text-green-600">✓ All rules passed</div>
               ) : (
-                <div className="grid grid-cols-1 gap-2">
+                <div className="grid grid-cols-1 gap-1">
                   {[
                     { rule: 'No weekend scheduling', check: !validationIssues.some(i => i.issue.includes('weekend')) },
                     { rule: 'No bank holiday scheduling', check: !validationIssues.some(i => i.issue.includes('bank holiday')) },
@@ -469,78 +461,84 @@ const SeasonReport: React.FC<SeasonReportProps> = ({ events, bankHolidays, termD
             </div>
           </div>
 
-          {/* Detailed Issues */}
-          {validationIssues.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-md font-semibold text-gray-900 mb-3">Detailed Issues</h4>
-              {validationIssues.map((issue, index) => {
-                // Determine background color based on issue type
-                let bgColor = '';
-                let textColor = '';
-                let hoverBg = '';
-                
-                if (issue.issue.includes('days apart')) {
-                  // Spacing violations
-                  bgColor = 'bg-red-50';
-                  textColor = 'text-red-700';
-                  hoverBg = 'hover:bg-red-100';
-                } else if (issue.issue.includes('weekend')) {
-                  // Weekend scheduling
-                  bgColor = 'bg-orange-50';
-                  textColor = 'text-orange-700';
-                  hoverBg = 'hover:bg-orange-100';
-                } else if (issue.issue.includes('bank holiday')) {
-                  // Bank holiday scheduling
-                  bgColor = 'bg-yellow-50';
-                  textColor = 'text-yellow-700';
-                  hoverBg = 'hover:bg-yellow-100';
-                } else if (issue.issue.includes('Holy Week')) {
-                  // Holy Week violations
-                  bgColor = 'bg-purple-50';
-                  textColor = 'text-purple-700';
-                  hoverBg = 'hover:bg-purple-100';
-                } else if (issue.issue.includes('term holidays')) {
-                  // Term holiday ratio issues
-                  bgColor = 'bg-blue-50';
-                  textColor = 'text-blue-700';
-                  hoverBg = 'hover:bg-blue-100';
-                } else if (issue.issue.includes('maximum')) {
-                  // Secretary workload limits
-                  bgColor = 'bg-indigo-50';
-                  textColor = 'text-indigo-700';
-                  hoverBg = 'hover:bg-indigo-100';
-                } else if (issue.issue.includes('afternoon')) {
-                  // Afternoon ratio issues
-                  bgColor = 'bg-cyan-50';
-                  textColor = 'text-cyan-700';
-                  hoverBg = 'hover:bg-cyan-100';
-                } else if (issue.issue.includes('Candidates Panel')) {
-                  // Candidates Panel week conflicts
-                  bgColor = 'bg-emerald-50';
-                  textColor = 'text-emerald-700';
-                  hoverBg = 'hover:bg-emerald-100';
-                } else {
-                  // Default fallback
-                  bgColor = 'bg-gray-50';
-                  textColor = 'text-gray-700';
-                  hoverBg = 'hover:bg-gray-100';
-                }
+          {/* Right Column: Detailed Issues */}
+          <div className="bg-white border border-gray-200 rounded-md p-4">
+            <h4 className="text-md font-semibold text-gray-900 mb-3">
+              Detailed Issues {validationIssues.length > 0 && `(${validationIssues.length})`}
+            </h4>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {validationIssues.length === 0 ? (
+                <div className="text-green-600">No issues found</div>
+              ) : (
+                validationIssues.map((issue, index) => {
+                  // Determine background color based on issue type
+                  let bgColor = '';
+                  let textColor = '';
+                  let hoverBg = '';
+                  
+                  if (issue.issue.includes('days apart')) {
+                    // Spacing violations
+                    bgColor = 'bg-red-50';
+                    textColor = 'text-red-700';
+                    hoverBg = 'hover:bg-red-100';
+                  } else if (issue.issue.includes('weekend')) {
+                    // Weekend scheduling
+                    bgColor = 'bg-orange-50';
+                    textColor = 'text-orange-700';
+                    hoverBg = 'hover:bg-orange-100';
+                  } else if (issue.issue.includes('bank holiday')) {
+                    // Bank holiday scheduling
+                    bgColor = 'bg-yellow-50';
+                    textColor = 'text-yellow-700';
+                    hoverBg = 'hover:bg-yellow-100';
+                  } else if (issue.issue.includes('Holy Week')) {
+                    // Holy Week violations
+                    bgColor = 'bg-purple-50';
+                    textColor = 'text-purple-700';
+                    hoverBg = 'hover:bg-purple-100';
+                  } else if (issue.issue.includes('term holidays')) {
+                    // Term holiday ratio issues
+                    bgColor = 'bg-blue-50';
+                    textColor = 'text-blue-700';
+                    hoverBg = 'hover:bg-blue-100';
+                  } else if (issue.issue.includes('maximum')) {
+                    // Secretary workload limits
+                    bgColor = 'bg-indigo-50';
+                    textColor = 'text-indigo-700';
+                    hoverBg = 'hover:bg-indigo-100';
+                  } else if (issue.issue.includes('afternoon')) {
+                    // Afternoon ratio issues
+                    bgColor = 'bg-cyan-50';
+                    textColor = 'text-cyan-700';
+                    hoverBg = 'hover:bg-cyan-100';
+                  } else if (issue.issue.includes('Candidates Panel')) {
+                    // Candidates Panel week conflicts
+                    bgColor = 'bg-emerald-50';
+                    textColor = 'text-emerald-700';
+                    hoverBg = 'hover:bg-emerald-100';
+                  } else {
+                    // Default fallback
+                    bgColor = 'bg-gray-50';
+                    textColor = 'text-gray-700';
+                    hoverBg = 'hover:bg-gray-100';
+                  }
 
-                return (
-                  <div 
-                    key={index} 
-                    onClick={() => handleEventClick(issue.event)}
-                    className={`p-4 rounded-md cursor-pointer ${bgColor} ${textColor} ${hoverBg}`}
-                  >
-                    <div className="font-medium">{issue.issue}</div>
-                    <div className="text-sm mt-1 opacity-90">
-                      Event: {issue.event.title || `${issue.event.type} ${issue.event.panelNumber}`}
+                  return (
+                    <div 
+                      key={index} 
+                      onClick={() => handleEventClick(issue.event)}
+                      className={`p-3 rounded-md cursor-pointer text-sm ${bgColor} ${textColor} ${hoverBg}`}
+                    >
+                      <div className="font-medium">{issue.issue}</div>
+                      <div className="mt-1 opacity-90">
+                        Event: {issue.event.title || `${issue.event.type} ${issue.event.panelNumber}`}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
