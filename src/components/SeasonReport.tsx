@@ -132,43 +132,70 @@ const SeasonReport: React.FC<SeasonReportProps> = ({ events, bankHolidays, termD
       }
     });
 
-    // Check spacing between events for Panel Secretaries
-    secretaryLimits.forEach(secretary => {
-      const secretaryEvents = seasonEvents
-        .filter(event => event.secretary?.name === secretary.name)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Check spacing between events for ALL Panel Secretaries
+    const uniqueSecretaries = Array.from(new Set(
+      events
+        .filter(event => 
+          event.secretary && 
+          ['Panel', 'Carousel'].includes(event.type)
+        )
+        .map(event => event.secretary.name)
+    ));
 
-      // Check Carousel spacing (7 days)
-      const carousels = secretaryEvents.filter(event => event.type === 'Carousel');
-      for (let i = 0; i < carousels.length - 1; i++) {
-        const currentDate = new Date(carousels[i].date);
-        const nextDate = new Date(carousels[i + 1].date);
-        const daysBetween = Math.floor((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysBetween < 7) {
-          issues.push({
-            event: carousels[i + 1],
-            issue: `${secretary.name} has Carousels scheduled only ${daysBetween} days apart (minimum 7 days required between Carousels)`,
-            severity: 'error'
-          });
-        }
-      }
+    console.log('Checking all secretaries:', uniqueSecretaries);
 
-      // Check Panel spacing (21 days)
-      const panels = secretaryEvents.filter(event => event.type === 'Panel');
-      for (let i = 0; i < panels.length - 1; i++) {
-        const currentDate = new Date(panels[i].date);
-        const nextDate = new Date(panels[i + 1].date);
-        const daysBetween = Math.floor((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysBetween < 21) {
-          issues.push({
-            event: panels[i + 1],
-            issue: `${secretary.name} has Panels scheduled only ${daysBetween} days apart (minimum 21 days required between Panels)`,
-            severity: 'error'
-          });
+    uniqueSecretaries.forEach(secretaryName => {
+      // Get ALL events for this secretary in the season
+      const secretaryEvents = events.filter(event => 
+        event.secretary?.name === secretaryName && // Match secretary name
+        event.season === season && // Only check events in current season
+        event.status !== 'Cancelled' && // Exclude cancelled events
+        ['Panel', 'Carousel'].includes(event.type) // Only Panels and Carousels
+      ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      console.log(`Checking events for ${secretaryName}:`, secretaryEvents);
+
+      // Check each event against all subsequent events
+      secretaryEvents.forEach((currentEvent, index) => {
+        // Look at all following events
+        for (let i = index + 1; i < secretaryEvents.length; i++) {
+          const nextEvent = secretaryEvents[i];
+          
+          const currentDate = new Date(currentEvent.date);
+          const nextDate = new Date(nextEvent.date);
+          currentDate.setHours(0, 0, 0, 0);
+          nextDate.setHours(0, 0, 0, 0);
+          
+          const daysBetween = Math.floor((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Define minimum days based on event types
+          let minDays: number;
+          let description: string;
+          
+          if (currentEvent.type === 'Panel' && nextEvent.type === 'Panel') {
+            minDays = 21;  // Panel to Panel: 21 days
+            description = 'Panel to Panel';
+          } else if (currentEvent.type === 'Carousel' && nextEvent.type === 'Carousel') {
+            minDays = 5;   // Carousel to Carousel: 5 days (changed from 7)
+            description = 'Carousel to Carousel';
+          } else if (currentEvent.type === 'Carousel' && nextEvent.type === 'Panel') {
+            minDays = 10;  // Carousel to Panel: 10 days (changed from 14)
+            description = 'Carousel to Panel';
+          } else {
+            // Panel to Carousel
+            minDays = 10;  // Panel to Carousel: 10 days (unchanged)
+            description = 'Panel to Carousel';
+          }
+          
+          if (daysBetween < minDays) {
+            issues.push({
+              event: nextEvent,
+              issue: `${secretaryName} has ${description} events scheduled only ${daysBetween} days apart (${format(currentDate, 'dd/MM/yyyy')} to ${format(nextDate, 'dd/MM/yyyy')})`,
+              severity: 'error'
+            });
+          }
         }
-      }
+      });
     });
 
     // Check term holiday ratio
@@ -446,22 +473,72 @@ const SeasonReport: React.FC<SeasonReportProps> = ({ events, bankHolidays, termD
           {validationIssues.length > 0 && (
             <div className="space-y-4">
               <h4 className="text-md font-semibold text-gray-900 mb-3">Detailed Issues</h4>
-              {validationIssues.map((issue, index) => (
-                <div 
-                  key={index} 
-                  onClick={() => handleEventClick(issue.event)}
-                  className={`p-4 rounded-md cursor-pointer hover:opacity-90 ${
-                    issue.severity === 'error' 
-                      ? 'bg-red-50 text-red-700 hover:bg-red-100' 
-                      : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                  }`}
-                >
-                  <div className="font-medium">{issue.issue}</div>
-                  <div className="text-sm mt-1">
-                    Event: {issue.event.title || `${issue.event.type} ${issue.event.panelNumber}`}
+              {validationIssues.map((issue, index) => {
+                // Determine background color based on issue type
+                let bgColor = '';
+                let textColor = '';
+                let hoverBg = '';
+                
+                if (issue.issue.includes('days apart')) {
+                  // Spacing violations
+                  bgColor = 'bg-red-50';
+                  textColor = 'text-red-700';
+                  hoverBg = 'hover:bg-red-100';
+                } else if (issue.issue.includes('weekend')) {
+                  // Weekend scheduling
+                  bgColor = 'bg-orange-50';
+                  textColor = 'text-orange-700';
+                  hoverBg = 'hover:bg-orange-100';
+                } else if (issue.issue.includes('bank holiday')) {
+                  // Bank holiday scheduling
+                  bgColor = 'bg-yellow-50';
+                  textColor = 'text-yellow-700';
+                  hoverBg = 'hover:bg-yellow-100';
+                } else if (issue.issue.includes('Holy Week')) {
+                  // Holy Week violations
+                  bgColor = 'bg-purple-50';
+                  textColor = 'text-purple-700';
+                  hoverBg = 'hover:bg-purple-100';
+                } else if (issue.issue.includes('term holidays')) {
+                  // Term holiday ratio issues
+                  bgColor = 'bg-blue-50';
+                  textColor = 'text-blue-700';
+                  hoverBg = 'hover:bg-blue-100';
+                } else if (issue.issue.includes('maximum')) {
+                  // Secretary workload limits
+                  bgColor = 'bg-indigo-50';
+                  textColor = 'text-indigo-700';
+                  hoverBg = 'hover:bg-indigo-100';
+                } else if (issue.issue.includes('afternoon')) {
+                  // Afternoon ratio issues
+                  bgColor = 'bg-cyan-50';
+                  textColor = 'text-cyan-700';
+                  hoverBg = 'hover:bg-cyan-100';
+                } else if (issue.issue.includes('Candidates Panel')) {
+                  // Candidates Panel week conflicts
+                  bgColor = 'bg-emerald-50';
+                  textColor = 'text-emerald-700';
+                  hoverBg = 'hover:bg-emerald-100';
+                } else {
+                  // Default fallback
+                  bgColor = 'bg-gray-50';
+                  textColor = 'text-gray-700';
+                  hoverBg = 'hover:bg-gray-100';
+                }
+
+                return (
+                  <div 
+                    key={index} 
+                    onClick={() => handleEventClick(issue.event)}
+                    className={`p-4 rounded-md cursor-pointer ${bgColor} ${textColor} ${hoverBg}`}
+                  >
+                    <div className="font-medium">{issue.issue}</div>
+                    <div className="text-sm mt-1 opacity-90">
+                      Event: {issue.event.title || `${issue.event.type} ${issue.event.panelNumber}`}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
