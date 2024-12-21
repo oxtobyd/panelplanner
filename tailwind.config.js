@@ -35,6 +35,7 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
         'slide-in': 'slideIn 0.3s ease-in-out',
+        highlight: 'highlight 2s ease-in-out'
       },
       keyframes: {
         fadeIn: {
@@ -45,6 +46,10 @@ export default {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
+        highlight: {
+          '0%, 100%': { backgroundColor: 'var(--tw-bg-opacity)' },
+          '50%': { backgroundColor: 'rgb(250 204 21 / 0.3)' } // yellow-300 with opacity
+        }
       },
     },
   },

@@ -60,7 +60,11 @@ export const DraggableEvent: React.FC<DraggableEventProps> = ({
   return (
     <div
       ref={shouldEnableDrag ? drag : null}
-      className={`${className} ${isDragging ? 'opacity-50' : ''} ${shouldEnableDrag ? 'cursor-move' : 'cursor-default'}`}
+      className={`
+        ${shouldEnableDrag ? 'cursor-move' : 'cursor-default'}
+        ${isDragging ? 'opacity-50' : ''}
+        ${className}
+      `}
       onClick={onClick}
     >
       <div className="font-medium">{event.title || `${event.type} ${event.panelNumber}`}</div>

@@ -29,6 +29,8 @@ import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useDrop } from 'react-dnd';
 import { DraggableEvent } from './DraggableEvent';
+import { useLocation } from 'react-router-dom';
+import { parseISO, isValid } from 'date-fns';
 
 interface CalendarProps {
   events: InterviewEvent[];
@@ -82,11 +84,51 @@ const Calendar: React.FC<CalendarProps> = ({
   onInfiniteScrollChange
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const location = useLocation();
   const [displayMonths, setDisplayMonths] = useState<Date[]>([currentDate]);
   const [bankHolidays, setBankHolidays] = useState<string[]>([]);
   const [termDates, setTermDates] = useState<TermDate[]>([]);
   const { ref, inView } = useInView();
   const calendarRef = useRef<HTMLDivElement>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const dateParam = params.get('date');
+    const highlightParam = params.get('highlight');
+    
+    if (dateParam) {
+      const newDate = parseISO(dateParam);
+      if (isValid(newDate)) {
+        setCurrentDate(newDate);
+      }
+    }
+
+    if (highlightParam) {
+      setHighlightedEventId(highlightParam);
+      // Clear the highlight after a few seconds
+      setTimeout(() => setHighlightedEventId(null), 3000);
+    }
+  }, [location.search]);
+
+  // Fetch bank holidays and term dates
+  const loadDates = async (year: number) => {
+    try {
+      const [holidays, terms] = await Promise.all([
+        fetchBankHolidays(),
+        termDatesApi.getTermDates(year)
+      ]);
+      setBankHolidays(holidays);
+      setTermDates(terms);
+    } catch (error) {
+      console.error('Error loading dates:', error);
+    }
+  };
+
+  // Initial load and year change handler
+  useEffect(() => {
+    loadDates(currentDate.getFullYear());
+  }, [currentDate.getFullYear()]);
 
   // Disable infinite scroll and return to top
   const handleDisableInfiniteScroll = useCallback(() => {
@@ -272,25 +314,6 @@ const Calendar: React.FC<CalendarProps> = ({
     }
   }, [infiniteScroll]);
 
-  // Fetch bank holidays when component mounts or year changes
-  useEffect(() => {
-    const loadDates = async () => {
-      try {
-        const [holidays, terms] = await Promise.all([
-          fetchBankHolidays(),
-          termDatesApi.getTermDates(getYear(currentDate))
-        ]);
-        //console.log('Loaded bank holidays:', holidays);
-        //console.log('Loaded term dates:', terms);
-        setBankHolidays(holidays);
-        setTermDates(terms);
-      } catch (error) {
-        console.error('Error loading dates:', error);
-      }
-    };
-    loadDates();
-  }, [currentDate.getFullYear()]); // Only reload when year changes
-
   // Generate days for a specific month
   const getDaysForMonth = (monthDate: Date) => {
     const start = startOfMonth(monthDate);
@@ -331,11 +354,21 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const getEventStyles = (event: InterviewEvent) => {
-    const baseStyle = 'text-xs p-1 rounded mb-1 ';
+    const baseStyle = 'text-xs p-1 rounded mb-1 transition-all duration-500 ';
+    
+    const isHighlighted = highlightedEventId && (
+      event.id.toString() === highlightedEventId ||
+      event.panelNumber === highlightedEventId ||
+      `P${event.panelNumber}` === highlightedEventId
+    );
+    
+    const highlightStyle = isHighlighted 
+      ? 'ring-4 ring-yellow-400 ring-offset-2 scale-110 animate-highlight ' 
+      : '';
 
     // Handle availability events
     if (event.type === 'Availability') {
-      return baseStyle + (event.isAvailable 
+      return baseStyle + highlightStyle + (event.isAvailable 
         ? 'bg-green-600/20 text-green-800 border border-green-600/30' 
         : 'bg-red-600/20 text-red-800 border border-red-600/30');
     }
@@ -343,19 +376,19 @@ const Calendar: React.FC<CalendarProps> = ({
     // Keep all existing event type styles
     switch (event.type) {
       case 'Panel':
-        return baseStyle + 'bg-primary-600/50 text-primary-100';
+        return baseStyle + highlightStyle + 'bg-primary-600/50 text-primary-100';
       case 'Carousel':
-        return baseStyle + 'bg-blue-600/50 text-blue-100';
+        return baseStyle + highlightStyle + 'bg-blue-600/50 text-blue-100';
       case 'TeamResidential':
-        return baseStyle + 'bg-purple-600/50 text-purple-100';
+        return baseStyle + highlightStyle + 'bg-purple-600/50 text-purple-100';
       case 'Training':
-        return baseStyle + 'bg-orange-600/50 text-orange-100';
+        return baseStyle + highlightStyle + 'bg-orange-600/50 text-orange-100';
       case 'Conference':
-        return baseStyle + 'bg-emerald-600/50 text-emerald-100';
+        return baseStyle + highlightStyle + 'bg-emerald-600/50 text-emerald-100';
       case 'CandidatesPanel':
-        return baseStyle + 'bg-pink-600/50 text-pink-100';
+        return baseStyle + highlightStyle + 'bg-pink-600/50 text-pink-100';
       default:
-        return baseStyle + 'bg-gray-600/50 text-gray-100';
+        return baseStyle + highlightStyle + 'bg-gray-600/50 text-gray-100';
     }
   };
 

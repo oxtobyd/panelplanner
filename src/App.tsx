@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import { InterviewEvent, Secretary, Venue } from './types';
 import { api } from './api/client';
 import { distributeWorkload } from './utils/workload-utils';
+import { fetchBankHolidays } from './utils/dateCalculations';
 import Calendar from './components/Calendar';
 import EventTable from './components/EventTable';
 import EventForm from './components/EventForm';
@@ -17,8 +18,10 @@ import {
   Menu,
   X,
   Archive,
+  ClipboardCheck,
 } from 'lucide-react';
 import SecretaryAvailability from './components/SecretaryAvailability';
+import SeasonReport from './components/SeasonReport';
 
 // Utility function to format date as YYYY-MM-DD
 const formatDate = (date: Date): string => {
@@ -46,6 +49,8 @@ function AppContent() {
   const [venueFilter, setVenueFilter] = useState<string>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infiniteScroll, setInfiniteScroll] = useState(false);
+  const [bankHolidays, setBankHolidays] = useState<string[]>([]);
+  const [termDates, setTermDates] = useState<any[]>([]);
 
   const fetchEvents = async () => {
     try {
@@ -115,6 +120,30 @@ function AppContent() {
       setSecretaries(updatedSecretaries);
     }
   }, [events]);
+
+  useEffect(() => {
+    const loadBankHolidays = async () => {
+      try {
+        const holidays = await fetchBankHolidays();
+        setBankHolidays(holidays);
+      } catch (error) {
+        console.error('Error loading bank holidays:', error);
+      }
+    };
+    loadBankHolidays();
+  }, []);
+
+  useEffect(() => {
+    const loadTermDates = async () => {
+      try {
+        const response = await api.getTermDates();
+        setTermDates(response);
+      } catch (error) {
+        console.error('Error loading term dates:', error);
+      }
+    };
+    loadTermDates();
+  }, []);
 
   const handleEventClick = (event: InterviewEvent) => {
     setSelectedEvent(event);
@@ -328,6 +357,16 @@ function AppContent() {
               />
               <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Resources</span>
             </Link>
+            <Link
+              to="/season-report"
+              className="mt-1 group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-900 hover:bg-gray-50 hover:text-primary-600"
+            >
+              <ClipboardCheck 
+                className={`mr-3 flex-shrink-0 h-5 w-5 text-gray-400 group-hover:text-gray-500`}
+                aria-hidden="true"
+              />
+              <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Season Report</span>
+            </Link>
           </nav>
         </div>
 
@@ -408,6 +447,16 @@ function AppContent() {
                     <SecretaryAvailability 
                       secretaries={secretaries}
                       onAvailabilityChange={fetchEvents} 
+                    />
+                  } 
+                />
+                <Route 
+                  path="/season-report" 
+                  element={
+                    <SeasonReport 
+                      events={events}
+                      bankHolidays={bankHolidays}
+                      termDates={termDates}
                     />
                   } 
                 />
