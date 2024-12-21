@@ -44,7 +44,7 @@ function AppContent() {
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
   const [secretaryFilter, setSecretaryFilter] = useState<string>('all');
   const [venueFilter, setVenueFilter] = useState<string>('all');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [infiniteScroll, setInfiniteScroll] = useState(false);
 
   const fetchEvents = async () => {
@@ -294,7 +294,7 @@ function AppContent() {
               <svg className="w-5 h-5 mr-3 text-gray-400 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Secretary Workload</span>
+              <span className={`${isSidebarOpen ? '' : 'hidden'}`}>Secretaries</span>
             </Link>
             <Link
               to="/venue-allocation"
@@ -358,7 +358,8 @@ function AppContent() {
                   element={
                     view === 'calendar' ? (
                       <Calendar 
-                        events={events} 
+                        events={events}
+                        secretaries={secretaries || []}
                         onEventClick={handleEventClick}
                         onEventDateChange={handleEventDateChange}
                         secretaryFilter={secretaryFilter}

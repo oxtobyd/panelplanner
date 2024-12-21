@@ -1,7 +1,7 @@
 import { Venue } from './venue';
 import { Secretary } from './secretary';
 
-export type InterviewType = 'Panel' | 'Carousel' | 'TeamResidential' | 'Training' | 'Conference' | 'CandidatesPanel';
+export type InterviewType = 'Panel' | 'Carousel' | 'TeamResidential' | 'Training' | 'Conference' | 'CandidatesPanel' | 'Availability';
 
 export interface InterviewEvent {
   id: string;

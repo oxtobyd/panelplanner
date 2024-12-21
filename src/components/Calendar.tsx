@@ -32,6 +32,7 @@ import { DraggableEvent } from './DraggableEvent';
 
 interface CalendarProps {
   events: InterviewEvent[];
+  secretaries: Secretary[];
   onEventClick: (event: InterviewEvent) => void;
   onEventDateChange: (event: InterviewEvent, newDate: Date) => Promise<void>;
   secretaryFilter: string;
@@ -72,6 +73,7 @@ const DroppableCell: React.FC<{
 
 const Calendar: React.FC<CalendarProps> = ({ 
   events, 
+  secretaries, 
   onEventClick,
   onEventDateChange,
   secretaryFilter,
@@ -113,14 +115,13 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // Get events for a specific month
   const getEventsForDay = (day: Date) => {
-    return filteredEvents.filter(event => {
+    // Get regular events
+    const dayEvents = filteredEvents.filter(event => {
       if (event.type === 'Panel') {
-        // For Panel events, check if the day falls within the 3-day range
         const eventStart = new Date(event.date);
         const eventEnd = new Date(event.date);
-        eventEnd.setDate(eventEnd.getDate() + 2); // Add 2 days to make it a 3-day span
+        eventEnd.setDate(eventEnd.getDate() + 2);
         
-        // Set hours to 0 for consistent date comparison
         eventStart.setHours(0, 0, 0, 0);
         eventEnd.setHours(23, 59, 59, 999);
         const compareDate = new Date(day);
@@ -128,18 +129,62 @@ const Calendar: React.FC<CalendarProps> = ({
         
         return compareDate >= eventStart && compareDate <= eventEnd;
       } else {
-        // For other event types, keep the existing single-day check
         return isSameDay(new Date(event.date), day);
       }
     });
+
+    // Add all availability events for this day (with null check)
+    if (secretaries?.length > 0) {
+      secretaries.forEach(secretary => {
+        const availability = secretary.availability?.find(a => 
+          isSameDay(new Date(a.date), day)
+        );
+        
+        if (availability) {
+          dayEvents.push({
+            id: `availability-${secretary.id}-${day.toISOString()}`,
+            type: 'Availability',
+            date: day,
+            secretary: secretary,
+            title: `${secretary.name} - ${availability.isAvailable ? 'Available' : 'Unavailable'}`,
+            isAvailable: availability.isAvailable,
+            reason: availability.reason,
+            panelNumber: '',
+            weekNumber: 0,
+            season: '',
+            venue: { id: '', name: '' },
+            estimatedAttendance: 0,
+            actualAttendance: 0,
+            reportDate: new Date(),
+            reportDeadline: new Date(),
+            status: 'Available'
+          });
+        }
+      });
+    }
+
+    return dayEvents;
   };
 
   // Filter events based on secretary
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
-      if (secretaryFilter !== 'all' && event.secretary?.name !== secretaryFilter) {
+      // Always show availability events
+      if (event.type === 'Availability') return true;
+      
+      // Always show special events (non-Panel and non-Carousel) when filtering by secretary
+      if (secretaryFilter !== 'all' && 
+          !['Panel', 'Carousel'].includes(event.type)) {
+        return true;
+      }
+      
+      // Filter Panel and Carousel events by secretary
+      if (secretaryFilter !== 'all' && 
+          ['Panel', 'Carousel'].includes(event.type) && 
+          event.secretary?.name !== secretaryFilter) {
         return false;
       }
+      
       return true;
     });
   }, [events, secretaryFilter]);
@@ -286,21 +331,31 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const getEventStyles = (event: InterviewEvent) => {
-    const baseStyle = event.status === 'Cancelled' ? 'line-through opacity-75 ' : '';
-    
+    const baseStyle = 'text-xs p-1 rounded mb-1 ';
+
+    // Handle availability events
+    if (event.type === 'Availability') {
+      return baseStyle + (event.isAvailable 
+        ? 'bg-green-600/20 text-green-800 border border-green-600/30' 
+        : 'bg-red-600/20 text-red-800 border border-red-600/30');
+    }
+
+    // Keep all existing event type styles
     switch (event.type) {
       case 'Panel':
-        return baseStyle + 'bg-blue-100 text-blue-800 border border-blue-200';
+        return baseStyle + 'bg-primary-600/50 text-primary-100';
       case 'Carousel':
-        return baseStyle + 'bg-green-100 text-green-800 border border-green-200';
+        return baseStyle + 'bg-blue-600/50 text-blue-100';
       case 'TeamResidential':
-        return baseStyle + 'bg-purple-100 text-purple-800 border border-purple-200';
+        return baseStyle + 'bg-purple-600/50 text-purple-100';
       case 'Training':
-        return baseStyle + 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        return baseStyle + 'bg-orange-600/50 text-orange-100';
+      case 'Conference':
+        return baseStyle + 'bg-emerald-600/50 text-emerald-100';
       case 'CandidatesPanel':
-        return baseStyle + 'bg-red-100 text-red-800 border border-red-200';
+        return baseStyle + 'bg-pink-600/50 text-pink-100';
       default:
-        return baseStyle + 'bg-gray-100 text-gray-800 border border-gray-200';
+        return baseStyle + 'bg-gray-600/50 text-gray-100';
     }
   };
 
